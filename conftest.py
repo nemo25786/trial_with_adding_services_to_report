@@ -1,48 +1,16 @@
-import json
-from os.path import join
 import pytest
-from kubernetes import client, config
-import allure
-from definitions import container_list_location, kubeconfig_file
-
+from ccst_get_kb8_services_in_report import KubernetesSVCAttach
+from definitions import kubeconfig_file, container_list_location
+import logging
 
 @pytest.fixture(scope="function", autouse=True)
-def get_kube_env(label_selector):
+def get_kube_env(label_selector, get_log=logging.getLogger(), kubeconfig_file=kubeconfig_file):
     yield
-    containers_list = {}
-    config.load_kube_config(config_file=kubeconfig_file)
-
-    v1 = client.CoreV1Api()
-    # print("Listing pods with their IPs and containers:")
-
-    if label_selector is None:
-        ret = v1.list_pod_for_all_namespaces(watch=False)
-
-        for i in ret.items:
-            # print("%s\t%s\t%s" % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))
-            pod = v1.read_namespaced_pod(namespace=i.metadata.namespace, name=i.metadata.name)
-
-            for container in pod.spec.containers:
-                # print(container.image)
-                containers_list[i.metadata.namespace + ":" + i.metadata.name] = container.image
-    else:
-        for label in label_selector:
-            ret = v1.list_pod_for_all_namespaces(watch=False, **label)
-
-            for i in ret.items:
-                # print("%s\t%s\t%s" % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))
-                pod = v1.read_namespaced_pod(namespace=i.metadata.namespace, name=i.metadata.name)
-
-                for container in pod.spec.containers:
-                    # print(container.image)
-                    containers_list[i.metadata.namespace + ":" + i.metadata.name] = container.image
+    try:
+        kb8_attach = KubernetesSVCAttach(kubeconfig_file=kubeconfig_file)
+        kb8_attach.attach_svc_to_report(label_selector=label_selector, container_list_location=container_list_location)
+    except Exception as e:
+        get_log.warning("error in adding list of images to report")
 
 
 
-    container_list_file = join(container_list_location, "container_list.json")
-
-    with open(file=container_list_file, mode="w", encoding="utf-8") as file:
-        json.dump(containers_list, file)
-
-    allure.attach.file(source=container_list_file, name="container_list.json",
-                       attachment_type=allure.attachment_type.JSON)

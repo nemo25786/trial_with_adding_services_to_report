@@ -1,0 +1,3 @@
+[submodule "ccst_get_kb8_services_in_report"]
+	path = ccst_get_kb8_services_in_report
+	url = https://github.com/rnd-hub/ccst_get_kb8_services_in_report.git

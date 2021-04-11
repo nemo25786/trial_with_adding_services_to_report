@@ -3,14 +3,14 @@ from os.path import join
 import pytest
 from kubernetes import client, config
 import allure
-from definitions import kubeconfig_folder, container_list_location
+from definitions import container_list_location, kubeconfig_file
 
 
 @pytest.fixture(scope="function", autouse=True)
 def get_kube_env(label_selector):
     yield
     containers_list = {}
-    config.load_kube_config(config_file=kubeconfig_folder)
+    config.load_kube_config(config_file=kubeconfig_file)
 
     v1 = client.CoreV1Api()
     # print("Listing pods with their IPs and containers:")
